@@ -1,0 +1,28 @@
+[project]
+name = "openai-usage"
+version = "0.1.0"
+description = "An OpenAI API cost/token usage python context manager"
+readme = "README.md"
+authors = [
+    { name = "Dominik Deren", email = "dominik.deren@live.com" }
+]
+requires-python = ">=3.8"
+dependencies = []
+
+[project.scripts]
+openai-usage = "openai_usage:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]
+
+[dependency-groups]
+dev = [
+    "openai>=1.78.1",
+    "pytest>=8.3.5",
+]
