@@ -74,8 +74,6 @@ def test_openai_client_usage_collection():
     openai_client = OpenAI()
     
     with OpenAIUsage(openai_client) as usage:
-        resp_create = openai_client.responses.create(input="Tell me a joke", model="gpt-3.5-turbo")
-        resp_create2 = openai_client.responses.create(input="Tell me second joke", model="gpt-3.5-turbo")
         # The usage dict should match the flattened keys from the response usage
         expected_keys = [
             "input_tokens",
@@ -84,9 +82,71 @@ def test_openai_client_usage_collection():
             "output_tokens_details.reasoning_tokens",
             "total_tokens"
         ]
+        
+        resp_create = openai_client.responses.create(input="Tell me a joke", model="gpt-3.5-turbo")
+        
+        assert "cost" in usage
+        assert isinstance(usage["cost"], float)
+        assert usage["cost"] > 0
+
+        # New: check separate cost keys
+        assert "cost_input_tokens" in usage
+        assert isinstance(usage["cost_input_tokens"], float)
+        assert usage["cost_input_tokens"] >= 0
+
+        assert "cost_input_cached_tokens" in usage
+        assert isinstance(usage["cost_input_cached_tokens"], float)
+        assert usage["cost_input_cached_tokens"] >= 0
+
+        assert "cost_output_tokens" in usage
+        assert isinstance(usage["cost_output_tokens"], float)
+        assert usage["cost_output_tokens"] >= 0
+
+        assert "cost_total" in usage
+        assert isinstance(usage["cost_total"], float)
+        assert usage["cost_total"] >= 0
+
+        # cost_total should match cost for backward compatibility
+        assert usage["cost_total"] == usage["cost"]
+
+        prev_cost = usage["cost"]
+        resp_usage = getattr(resp_create, "usage", None)
+        assert resp_usage is not None
+        assert usage["input_tokens"] == resp_usage.input_tokens
+        assert usage["input_tokens_details.cached_tokens"] == resp_usage.input_tokens_details.cached_tokens
+        assert usage["output_tokens"] == resp_usage.output_tokens
+        assert usage["output_tokens_details.reasoning_tokens"] == resp_usage.output_tokens_details.reasoning_tokens
+        assert usage["total_tokens"] == resp_usage.total_tokens
+        
+        resp_create2 = openai_client.responses.create(input="Tell me second joke", model="gpt-3.5-turbo")
+        
         for key in expected_keys:
             assert key in usage
-        resp_usage = getattr(resp_create, "usage", None)
+        assert "cost" in usage
+        assert isinstance(usage["cost"], float)
+        assert usage["cost"] > 0
+
+        # New: check separate cost keys after second call
+        assert "cost_input_tokens" in usage
+        assert isinstance(usage["cost_input_tokens"], float)
+        assert usage["cost_input_tokens"] >= 0
+
+        assert "cost_input_cached_tokens" in usage
+        assert isinstance(usage["cost_input_cached_tokens"], float)
+        assert usage["cost_input_cached_tokens"] >= 0
+
+        assert "cost_output_tokens" in usage
+        assert isinstance(usage["cost_output_tokens"], float)
+        assert usage["cost_output_tokens"] >= 0
+
+        assert "cost_total" in usage
+        assert isinstance(usage["cost_total"], float)
+        assert usage["cost_total"] >= 0
+
+        # cost_total should match cost for backward compatibility
+        assert usage["cost_total"] == usage["cost"]
+
+        assert usage["cost"] > prev_cost
         resp_usage2 = getattr(resp_create2, "usage", None)
         assert resp_usage is not None
         assert resp_usage2 is not None
